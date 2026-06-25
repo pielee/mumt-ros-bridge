@@ -1,0 +1,56 @@
+# Gamepad -> manned-aircraft command mapping (mumt_joystick) + joy driver (joy_node).
+#
+# Hardware: Xbox-compatible gamepad on a desktop PC (stock Linux driver, plug & play).
+#   (No Jetson/xpad install needed — jetpack6-joy was only for the F1TENTH Jetson box.)
+#   Verify the pad first:  jstest /dev/input/js0   or   ros2 topic echo /joy
+#
+# Tuning workflow:
+#   1) ros2 run joy joy_node          (or use manned_joystick.launch.py)
+#   2) ros2 topic echo /joy           move each control, read its axes[i] index + range
+#   3) edit the indices / signs / trigger ranges below, then relaunch.
+#
+# Default axis indices assume the standard Linux 'joy' Xbox layout:
+#   0 = left stick X, 1 = left stick Y, 2 = LT, 3 = right stick X,
+#   4 = right stick Y, 5 = RT, 6 = dpad X, 7 = dpad Y
+# Triggers (LT/RT) typically read +1 when released and -1 when fully pressed.
+
+mumt_joystick:
+  ros__parameters:
+    aircraft_name: "M_F16"                    # manned pawn (matches instance "M_F16_C_*")
+    command_topic: "/mumt/aircraft_commands"
+    joy_topic: "/joy"
+    publish_rate_hz: 50.0
+
+    # --- attitude sticks ---
+    roll_axis: 3        # right stick X
+    pitch_axis: 4       # right stick Y
+    yaw_axis: 0         # left stick X
+    roll_sign: 1.0      # flipped 2026-06-24: stick-left now rolls left
+    pitch_sign: -1.0    # flip if pitch is reversed (pull back should = nose up)
+    yaw_sign: 1.0
+    roll_scale: 1.0
+    pitch_scale: 1.0
+    yaw_scale: 1.0
+    deadzone: 0.08
+
+    # --- throttle ---
+    # "incremental": hold RT to spool up, LT to spool down, value latches (recommended for a gamepad)
+    # "axis":        a single absolute throttle axis (use a throttle quadrant / slider)
+    throttle_mode: "incremental"
+    throttle_up_axis: 5        # RT
+    throttle_down_axis: 2      # LT
+    trigger_rest: 1.0          # raw trigger value when released  (VERIFY via jstest!)
+    trigger_full: -1.0         # raw trigger value when fully pressed
+    throttle_rate: 0.4         # per second (0 -> full in ~2.5 s)
+    throttle_init: 0.0
+
+    # used only when throttle_mode == "axis"
+    throttle_axis: 5
+    throttle_raw_at_zero: 1.0
+    throttle_raw_at_full: -1.0
+
+joy_node:
+  ros__parameters:
+    device_id: 0            # /dev/input/js0
+    deadzone: 0.0           # we apply our own deadzone in mumt_joystick
+    autorepeat_rate: 50.0   # keep republishing the held state
