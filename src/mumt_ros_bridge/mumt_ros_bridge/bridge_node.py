@@ -94,11 +94,12 @@ class MumtBridgeNode(Node):
         # Per-UAV setpoint as JSON (carries aircraft_name so UE routes it to the
         # right UAV). Multiple BTs (one per UAV) each publish their own name.
         payload = json.dumps({
-            "aircraft_name": str(msg.aircraft_name),
-            "heading_deg":   float(msg.heading_deg),
-            "altitude_m":    float(msg.altitude_m),
-            "throttle_norm": float(max(0.0, min(1.0, msg.throttle_norm))),
-            "launch_missile": bool(msg.launch_missile),
+            "aircraft_name":    str(msg.aircraft_name),
+            "heading_deg":      float(msg.heading_deg),
+            "altitude_m":       float(msg.altitude_m),
+            "throttle_norm":    float(max(0.0, min(1.0, msg.throttle_norm))),
+            "target_speed_mps": float(msg.target_speed_mps),
+            "launch_missile":   bool(msg.launch_missile),
         })
         try:
             self._sp_sock.sendto(payload.encode("utf-8"),
