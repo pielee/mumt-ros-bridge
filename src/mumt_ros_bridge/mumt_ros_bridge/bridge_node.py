@@ -9,7 +9,6 @@ Combined MUMT bridge node:
 
 import json
 import socket
-import struct
 
 import rclpy
 from rclpy.node import Node
@@ -22,9 +21,6 @@ except ImportError as exc:
         "custom_msgs not found — build the workspace first: "
         "colcon build --packages-select custom_msgs"
     ) from exc
-
-_SETPOINT_FMT = "<BfffBBH"   # 17 bytes
-assert struct.calcsize(_SETPOINT_FMT) == 17
 
 
 class MumtBridgeNode(Node):
@@ -49,8 +45,6 @@ class MumtBridgeNode(Node):
         self._recv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._recv_sock.bind(("0.0.0.0", self._state_port))
         self._recv_sock.setblocking(False)
-
-        self._seq: int = 0
 
         # ROS publishers / subscribers
         self._state_pub = self.create_publisher(String, "/mumt/aircraft_states", 10)
@@ -97,20 +91,18 @@ class MumtBridgeNode(Node):
                               (self._unreal_ip, self._control_port))
 
     def _on_setpoint(self, msg: AircraftSetpoint):
-        seq = self._seq & 0xFFFF
-        self._seq += 1
-        packet = struct.pack(
-            _SETPOINT_FMT,
-            0x01,
-            float(msg.heading_deg),
-            float(msg.altitude_m),
-            float(max(0.0, min(1.0, msg.throttle_norm))),
-            int(bool(msg.launch_missile)),
-            0,
-            seq,
-        )
+        # Per-UAV setpoint as JSON (carries aircraft_name so UE routes it to the
+        # right UAV). Multiple BTs (one per UAV) each publish their own name.
+        payload = json.dumps({
+            "aircraft_name": str(msg.aircraft_name),
+            "heading_deg":   float(msg.heading_deg),
+            "altitude_m":    float(msg.altitude_m),
+            "throttle_norm": float(max(0.0, min(1.0, msg.throttle_norm))),
+            "launch_missile": bool(msg.launch_missile),
+        })
         try:
-            self._sp_sock.sendto(packet, (self._unreal_ip, self._setpoint_port))
+            self._sp_sock.sendto(payload.encode("utf-8"),
+                                 (self._unreal_ip, self._setpoint_port))
         except OSError as e:
             self.get_logger().warn(f"Setpoint UDP send error: {e}")
 
