@@ -54,7 +54,7 @@ class MumtBridgeNode(Node):
         self.create_subscription(AircraftSetpoint, "/aircraft/setpoint",
                                  self._on_setpoint, 10)
 
-        self.create_timer(0.02, self._recv_state)
+        self.create_timer(1.0/60.0, self._recv_state)   # 60 Hz state-recv drain
 
         self.get_logger().info(
             f"MUMT bridge started | "
