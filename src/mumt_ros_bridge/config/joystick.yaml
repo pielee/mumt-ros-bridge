@@ -26,7 +26,7 @@ mumt_joystick:
     pitch_axis: 4       # right stick Y
     yaw_axis: 0         # left stick X
     roll_sign: 1.0      # flipped 2026-06-24: stick-left now rolls left
-    pitch_sign: -1.0    # flip if pitch is reversed (pull back should = nose up)
+    pitch_sign: 1.0    # flip if pitch is reversed (pull back should = nose up)
     yaw_sign: 1.0
     roll_scale: 1.0
     pitch_scale: 1.0
